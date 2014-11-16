@@ -498,10 +498,12 @@ var drawBlackout = function(canvas, game){
 	 		time+=.05
 	 		ctx.fillStyle = "rgba(0,0,0," + time + ")";
 	 		ctx.fillRect(0,0,600,600);
-	 	}, 400);
+	 	}, 100);
 	 setTimeout(function() {
 	 	clearInterval(id);
-	 },5000);
+	 	drawGameOver(canvas, game);
+	
+	 },2000);
 }
 
 var drawBlackin = function(canvas, game){
@@ -516,17 +518,18 @@ var drawBlackin = function(canvas, game){
 
 	 		time-=.05
 	 		if(time>=0){
-	 		ctx.fillStyle = "rgba(0,0,0," + time + ")";
-	 		ctx.fillRect(0,0,600,600);
-
+		 		ctx.fillStyle = "rgba(0,0,0," + time + ")";
+		 		ctx.fillRect(0,0,600,600);
 	 		}
 
 	 		drawShadow(canvas);
 	 	}, 100);
+	 
 	 setTimeout(function() {
 	 	clearInterval(id);
+	 	
 	 
-	 },5000);
+	 },2000);
 	 
 }
 
@@ -536,26 +539,19 @@ var draw = function() {
 
 	window.requestAnimationFrame(draw);
 
-
-
-
 	if(!game.bgFlag){
 		drawBlackin(game.canvas3,game);
 	}
 	
 	if(game.player.health <= 0 && game.over == false){
-		drawBlackout(game.canvas3);
-		setTimeout(function(){
-			drawGameOver(game.canvas4, game);
-		},3000);
+		drawBlackout(game.canvas3,game);
 		game.over = true;
-		
 	}
-	else{
+	else if(!game.over){
 		drawUi(game.canvas4, game);
 	}
 
-	drawBackground(game.canvas1, game);
+	drawBackground(game.canvas1,  game);
 	drawElts(game, game.canvas2);
 	drawRanged(game.canvas2, game.ranged);
 	drawDead(game.canvas1, game)
