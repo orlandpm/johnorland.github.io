@@ -1,0 +1,46 @@
+body{
+	background-color: black;
+}
+#wrapper{
+	 width:600px;
+	 height:600px;
+	 margin: 0 auto;
+	 position: relative;
+}
+#canvas1{
+	position: absolute;
+	background-color: black;
+	left:0;
+	top:0;
+	z-index: 1;
+
+}
+
+#canvas2{
+	position: absolute;
+	left:0;
+	top:0;
+	z-index: 2;
+
+}
+
+#canvas3{
+	position: absolute;
+	left:0;
+	top:0;
+	z-index: 3;
+
+}
+
+#canvas4{
+	position: absolute;
+	left:0;
+	top:0;
+	z-index: 4;
+
+}
+
+@font-face {
+    font-family: 'ilits';
+    src: url('ilits.ttf');
+}
