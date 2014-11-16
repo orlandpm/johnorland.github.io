@@ -543,11 +543,12 @@ var draw = function() {
 		drawBlackin(game.canvas3,game);
 	}
 	
-	if(game.player.health <= 0 && game.over == true){
+	if(game.player.health <= 0 && game.over == false){
 		drawBlackout(game.canvas3);
 		setTimeout(function(){
 			drawGameOver(game.canvas4, game);
 		},3000);
+		game.over = true;
 		
 	}
 	else{
