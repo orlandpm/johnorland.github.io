@@ -543,7 +543,7 @@ var draw = function() {
 		drawBlackin(game.canvas3,game);
 	}
 	
-	if(game.player.health <= 0){
+	if(game.player.health <= 0 && game.over == true){
 		drawBlackout(game.canvas3);
 		setTimeout(function(){
 			drawGameOver(game.canvas4, game);
@@ -595,6 +595,9 @@ var loadResources = function(game, resc){
 
 function Game(){
 
+
+
+	this.over = false;
 	this.elts = [];
 	this.player = null;
 	this.pos = [0,0];
