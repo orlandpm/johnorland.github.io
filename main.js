@@ -51,10 +51,12 @@ function Resource(){
 	this.type;
 	this.name;
 	this.path;
-	this.init = function(type, name, path){
+	this.num;
+	this.init = function(type, name, path, num){
 		this.type = type;
 		this.name = name;
 		this.path = path;
+		this.num = num;
 	}
 }
 
@@ -67,6 +69,7 @@ function Attack(){
 	this.speed = 20;
 	this.type = "";
 	this.collided = false;
+	this.traveled = 0;
 }
 
 var keyHandler = function (game, key, val) {
@@ -163,7 +166,7 @@ var playerShot = function(game, player){
 	  	 			a.pos[0] += 25 + temp[0];
 	  	 			a.pos[1] += 25 - temp[1];
 
-	  	 			a.damage = 25;
+	  	 			a.damage = 60;
 
 	  	 			a.origin = "player";
 	  				a.type = "ranged";
@@ -204,15 +207,13 @@ var playerDrawHandler = function(game, canvas, player){
 		frame = 0;
 	}
 	if(frame == 1 && player.step[0] == false){
-			var footstep = game.sounds.concrete1.cloneNode();
-			footstep.volume = .3;
-			footstep.play();
+			var footstep = game.sounds.concrete1.play();
+			//footstep.volume = .3;
 			player.step[0] = true;
 	}
 	else if(frame == 5 && player.step[1] == false){
-			var footstep = game.sounds.concrete2.cloneNode();
-			footstep.volume = .3;
-			footstep.play();
+			var footstep = game.sounds.concrete2.play();
+			//footstep.volume = .3;
 			player.step[1] = true;
 	}
 	else if(frame == 0){
@@ -243,8 +244,7 @@ var enemyMoveHandler = function (enemy, player, diff){
     if(mag < 15){
     	player.health -= 5;
     	if(player.health > 0){
-    	var s = game.sounds.impact.cloneNode();
-    	s.play();
+    		game.sounds.impact.play();
         }
     	enemy.rot = Math.PI/2 + Math.atan2(enemy.dir[1], enemy.dir[0]) + Math.random() * .2;
     	return enemy;
@@ -311,8 +311,7 @@ var attacksHandler = function(game,diff){
 		if(a.type == "ranged"){
 			//console.log("pushed a ranged");
 			ranged.push(a);
-			var s = game.sounds.gunshot.cloneNode();
-			s.play();
+			game.sounds.gunshot.play();
 
 		}
 	}
@@ -320,13 +319,13 @@ var attacksHandler = function(game,diff){
 		a = ranged.pop();
 		a.pos[0] += a.dir[0] * a.speed;
 		a.pos[1] += a.dir[1] * a.speed;
-
+		a.traveled += a.speed;
 		for(i = 1; i < game.elts.length; i++){
 			if(detectHit(game.elts[i], a)){
 				a.collided = true;
+				a.damage -= (a.traveled/600) * 50; 
 				game.elts[i].health -= a.damage;
-				var m = game.sounds.impact.cloneNode();
-				m.play();
+				var m = game.sounds.impact.play();
 				//console.log("collision detected!");
 			}
 		}
@@ -364,11 +363,10 @@ var updateElts = function (game, diff) {
 			}
 			else{
 				temp = game.elts.splice(i,1);
-				s = game.sounds.mDeath.cloneNode();
-				s.play();
+				s = game.sounds.mDeath.play();
 				setTimeout(function(){
-					var s = game.sounds.splat.cloneNode();
-					s.volume = .3;
+					var s = game.sounds.splat.play();
+					//s.volume = .3;
 					s.play();
 				},400);
 				
@@ -558,36 +556,102 @@ var draw = function() {
 
 }
 
+var soundPool = function(){
+ 	console.log("new soundpool!");
+	this.pool = [];
+	this.current = 0;
+	this.num = 0;
+	this.ready = false;
+	this.loaded = 0;
+	this.init = function (resc){
+		var s = this;
+		s.num = resc.num;
+		console.log("initializing soundpool");
+		console.log(resc);
+		for(var i = 0; i < s.num; i++){
+			var temp = new Audio();
+			console.log("FUUUUCK");
+			temp.oncanplaythrough = function(){
+				console.log(this);
+				console.log("ROFLLLL");
+				s.loaded++;
+				if(s.num == s.loaded){
+					s.ready = true;
+				}
+			}
+			temp.src = resc.path;
+			//temp.play();
+			this.pool.push(temp);
+		}
+		
+	}
+
+	this.play = function(){
+		for(var i = 0; i < this.num; i++){
+			this.current = (this.current + 1)%this.num;
+			if(this.pool[this.current].currentTime == 0 || this.pool[this.current].ended){
+				this.pool[this.current].play();
+				break;
+			}
+		}
+	}
+}
+
 var loadResources = function(game, resc){
-	var n = resc.length;
+	var n = 0;
 	var loaded = 0;
 	var temp;
+	var soundFlag = false;
 	for(var i = 0; i < n; i++){
+		if(resc[i].type == "image"){
+			n++;
+		}
+	}
+
+	for(var i = 0; i < resc.length; i++){
+	//	console.log(resc[i]);
 		if(resc[i].type == "image"){
 			game.images[resc[i].name] = new Image();
 			game.images[resc[i].name].onload = function(){
-				loaded++;
-				//console.log(loaded);
-				if(loaded == n){
-					//console.log(game.sounds);
-					game.startup();
-				}
 			}
 			game.images[resc[i].name].src = resc[i].path
 		}
 		else if(resc[i].type == "sound"){
-			game.sounds[resc[i].name] = new Audio();
-			game.sounds[resc[i].name].onloadeddata = function(){
-				loaded++;
+			n++;
+			var t = new soundPool();
+			game.sounds[resc[i].name] = t;
+			game.sounds[resc[i].name].init(resc[i]);
 				//console.log(loaded);
-				if(loaded == n){
-					//console.log(game.sounds);
-					game.startup();
-				}
 			}
-			game.sounds[resc[i].name].src = resc[i].path
 		}
-	}
+		for(key in game.sounds){
+			console.log(key);
+		}
+
+	var myInterval = setInterval(function(){
+		soundFlag = true;	
+		console.log(game.sounds)
+		for(var key in game.sounds){
+			//console.log(key);
+			if(!game.sounds[key].ready){
+				console.log(key);
+				soundFlag = false;
+				console.log("sounds still loading");
+				loaded = 0;
+				break; 
+			}
+			else{
+				loaded++;
+			}
+		}
+		console.log(soundFlag);
+		console.log(loaded);
+		if(soundFlag == true && loaded == n){
+			console.log("sounds finished loading!")
+			clearInterval(myInterval);
+			game.startup();
+		}
+	}, 1000);
 }
 
 function Game(){
@@ -616,26 +680,26 @@ function Game(){
 	this.canvas3 = document.getElementById('canvas3');
 	this.canvas4 = document.getElementById('canvas4')
 
-	this.addResc = function(type, name, path){
+	this.addResc = function(type, name, path, num){
 			var temp = new Resource();
-			temp.init(type,name,path);
+			temp.init(type,name,path, num);
 			this.resources.push(temp);
 	}
 
 	this.defResc = function(){
 
-		this.addResc("sound","gunshot","sounds/ak.wav");
-		this.addResc("sound","impact","sounds/impact.wav");
-		this.addResc("sound","mDeath","sounds/monsterDeath.wav");
-		this.addResc("sound","splat","sounds/splat.wav");
-		this.addResc("sound","ambient","sounds/ambient.mp3");
-		this.addResc("sound","concrete1","sounds/concrete1.wav");
-		this.addResc("sound","concrete2","sounds/concrete2.wav");
-		this.addResc("image","bg","textures/asphalt.png");
-		this.addResc("image","player","sprites/player.png");
-		this.addResc("image","enemy","sprites/enemy.png");
-		this.addResc("image","death","sprites/death.png");
-		this.addResc("image","muzzle","sprites/muzzle.png");
+		this.addResc("sound","gunshot","sounds/ak.wav", 50);
+		this.addResc("sound","impact","sounds/impact.wav", 20);
+		this.addResc("sound","mDeath","sounds/monsterDeath.wav", 20);
+		this.addResc("sound","splat","sounds/splat.wav", 20);
+		this.addResc("sound","ambient","sounds/ambient.mp3", 1);
+		this.addResc("sound","concrete1","sounds/concrete1.wav", 20);
+		this.addResc("sound","concrete2","sounds/concrete2.wav", 20);
+		this.addResc("image","bg","textures/asphalt.png",1);
+		this.addResc("image","player","sprites/player.png",1);
+		this.addResc("image","enemy","sprites/enemy.png",1);
+		this.addResc("image","death","sprites/death.png",1);
+		this.addResc("image","muzzle","sprites/muzzle.png",1);
 
 
 	}
@@ -653,12 +717,13 @@ function Game(){
 
 	this.spawn = function () {
 		var game = this;
-		console.log(this);
+		//console.log(this);
 		//console.log("WTF");
 		this.wave = 1;
 		setInterval( function(){
 			game.wave++;
-			for(var i = 0; i < game.wave; i++){
+			var n = Math.floor(Math.random() * game.wave);
+			for(var i = 0; i < n; i++){
 				var enemy = new Enemy();
 				enemy.id = i;
 				enemy.init();
@@ -666,7 +731,7 @@ function Game(){
 				game.elts.push(enemy);
 			}
 			console.log(game);
-		}, 10000);
+		}, 5000);
 		
 	}
 
@@ -674,9 +739,9 @@ function Game(){
 	
 		draw();
 		//console.log(this.sounds);
-		this.sounds.ambient.loop = true;
-		this.sounds.ambient.play();
-		
+		this.sounds.ambient.pool[0].loop = true;
+		this.sounds.ambient.pool[0].play();
+		all();
 	}
 }
 
@@ -697,7 +762,8 @@ var drawShadow = function(canvas) {
 var game = new Game();
 game.init();
 
-		$('body').keydown(function(e) {
+var all = function () {
+	$('body').keydown(function(e) {
 		  game.player.move = keyHandler(game, e.keyCode, true);
 		});
 
@@ -707,22 +773,24 @@ game.init();
 
 
 
-var then = Date.now();
-var diff = 0;
+	var then = Date.now();
+	var diff = 0;
 
-game.spawn();
-setInterval( function () {
-	    	
-		    now = Date.now();
-		    diff = now - then;
-		    //console.log(game.elts);
-		   	attacksHandler(game, diff);
-			game.elts = updateElts(game, diff);
-			updateDead(game, diff);
-			
+	game.spawn();
+	setInterval( function () {
+		    	
+			    now = Date.now();
+			    diff = now - then;
+			    //console.log(game.elts);
+			   	attacksHandler(game, diff);
+				game.elts = updateElts(game, diff);
+				updateDead(game, diff);
+				
 
-		    then = now; 
-		},1000/60);
+			    then = now; 
+			},1000/60);
+	}
+		
 }
 
 
