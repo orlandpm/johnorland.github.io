@@ -570,6 +570,9 @@ var soundPool = function(){
 		console.log(resc);
 		for(var i = 0; i < s.num; i++){
 			var temp = new Audio();
+			if(resc.name == "concrete1" || resc.name == "concrete2"){
+				temp.volume = .5
+			}
 			console.log("FUUUUCK");
 			temp.oncanplaythrough = function(){
 				console.log(this);
