@@ -20,6 +20,9 @@ function Player (){
     this.attacks = [];
     this.ranged = [];
     this.shotId;
+    this.corpse = false;
+	this.corpseTime = 0;
+	this.corpseAngle;
 }
 
 function Enemy (){
@@ -184,7 +187,8 @@ var drawMuzzleFlash = function(player){
 	
 }
 var playerDrawHandler = function(game, canvas, player){
-	var ctx = canvas.getContext("2d");
+	if(player.health > 0){
+		var ctx = canvas.getContext("2d");
 	var img_player = game.images.player
 	//console.log(player.dir);
 	ctx.save();
@@ -232,6 +236,7 @@ var playerDrawHandler = function(game, canvas, player){
 		ctx.restore();
 		//console.log(player.rot);
 	}
+	}
 }
 
 var enemyMoveHandler = function (enemy, player, diff){
@@ -245,6 +250,7 @@ var enemyMoveHandler = function (enemy, player, diff){
     	player.health -= 5;
     	if(player.health > 0){
     		game.sounds.impact.play();
+    		player.corpseAngle = enemy.rot;
         }
     	enemy.rot = Math.PI/2 + Math.atan2(enemy.dir[1], enemy.dir[0]) + Math.random() * .2;
     	return enemy;
@@ -354,8 +360,17 @@ var updateElts = function (game, diff) {
 	var s;
 	for(i = 0; i < game.elts.length; i++){
 		temp = game.elts[i];
-		if(temp.type == "player" && game.player.health > 0){
-			game.elts[i] = playerMoveHandler(game.elts[i], game.elts, diff);
+		console.log(temp);
+		if(temp.type == "player"){
+			if(temp.health > 0){
+				game.elts[i] = playerMoveHandler(game.elts[i], game.elts, diff);
+			}
+			else{
+				temp.shooting = 0;
+				console.log(game.elts[0]);
+				game.dead.push(game.elts[0]);
+			}
+			
 		}
 		else if(temp.type == "enemy"){
 			if(temp.health > 0){
@@ -428,10 +443,14 @@ var drawDead = function(canvas, game){
 	for(i = 0; i < game.dead.length; i++){
 		temp = game.dead[i];
 		val = Math.floor(temp.corpseTime/50);
-		var img_death = game.images.death;
+		if(temp.type == "enemy"){
+			var img_death = game.images.edeath;
+		}
+		else if(temp.type == "player"){
+			var img_death = game.images.pdeath;
+		}
 		ctx.save();
-		//console.log(temp);
-		ctx.translate(temp.pos[0] + 25, temp.pos[1] + 50)
+		ctx.translate(temp.pos[0] + 25, temp.pos[1] + 50);
 		ctx.rotate(temp.rot);
 		ctx.translate(-(temp.pos[0]+ 25), -(temp.pos[1] + 50));
 		if(val < 6){
@@ -701,7 +720,8 @@ function Game(){
 		this.addResc("image","bg","textures/asphalt.png",1);
 		this.addResc("image","player","sprites/player.png",1);
 		this.addResc("image","enemy","sprites/enemy.png",1);
-		this.addResc("image","death","sprites/death.png",1);
+		this.addResc("image","edeath","sprites/edeath.png",1);
+		this.addResc("image","pdeath","sprites/pdeath.png",1);
 		this.addResc("image","muzzle","sprites/muzzle.png",1);
 
 
@@ -725,12 +745,12 @@ function Game(){
 		this.wave = 1;
 		setInterval( function(){
 			game.wave++;
-			var n = Math.floor(Math.random() * game.wave);
+			var n = 5 + Math.floor(Math.random() * game.wave%5);
 			for(var i = 0; i < n; i++){
 				var enemy = new Enemy();
 				enemy.id = i;
 				enemy.init();
-				enemy.speed = .01 + Math.random() * (game.wave/100);
+				enemy.speed = .01 + Math.random() * (game.wave%5)/100;
 				game.elts.push(enemy);
 			}
 			console.log(game);
